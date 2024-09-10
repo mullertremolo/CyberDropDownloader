@@ -84,6 +84,8 @@ class BunkrrCrawler(Crawler):
                 src = src.with_query("download=true")
                 if file_ext.lower() not in FILE_FORMATS['Images']:
                     src = src.with_host(src.host.replace("i-", ""))
+                if src.host.split(".")[0] == "fries":
+                    raise FileNotFoundError("Bunkr server is 'fries', reverting to parent")
                 new_scrape_item = await self.create_scrape_item(scrape_item, link, "", True, album_id, date)
 
                 if "no-image" in src.name:
@@ -168,7 +170,7 @@ class BunkrrCrawler(Crawler):
 
     async def get_stream_link(self, url: URL) -> URL:
         """Gets the stream link for a given url"""
-        cdn_possibilities = r"^(?:(?:(?:media-files|cdn|c|pizza|cdn-burger|cdn-nugget|burger|taquito|pizza|fries|meatballs|milkshake|kebab)[0-9]{0,2})|(?:(?:big-taco-|cdn-pizza|cdn-meatballs|cdn-milkshake|i.kebab|i.fries|i-nugget|i-milkshake)[0-9]{0,2}(?:redir)?))\.bunkr?\.[a-z]{2,3}$"
+        cdn_possibilities = r"^(?:(?:(?:media-files|cdn|c|pizza|cdn-burger|cdn-nugget|burger|taquito|pizza|fries|meatballs|milkshake|kebab)[0-9]{0,3})|(?:(?:big-taco-|cdn-pizza|cdn-meatballs|cdn-milkshake|i.kebab|i.fries|i-nugget|i-milkshake)[0-9]{0,2}(?:redir)?))\.(?:bunkrr{0,2}|bunkr-cache)\.[a-z]{2,3}$"
 
         if not re.match(cdn_possibilities, url.host):
             return url
