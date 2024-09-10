@@ -8,15 +8,11 @@ class HashManager:
         self.hash_client = HashClient(manager)  # Initialize hash client in constructor
     async def startup(self):
         await self.hash_client.startup()
-    
+
     def _get_hasher(self):
-        """Tries to import xxhash, otherwise falls back to hashlib.md5"""
-        try:
-            import xxhash
-            return xxhash.xxh128
-        except ImportError:
-            import hashlib
-            return hashlib.md5
+        """This is different from upstream which uses xxhash if available and falls back to md5"""
+        import hashlib
+        return hashlib.blake2b
 
     async def hash_file(self, filename):
         file_path = os.path.join(os.getcwd(), filename)  # Construct full file path
