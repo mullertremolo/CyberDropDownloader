@@ -15,13 +15,9 @@ class HashManager:
 
     @staticmethod
     def _get_hasher():
-        """Tries to import xxhash, otherwise falls back to hashlib.md5"""
-        try:
-            import xxhash  # type: ignore
-            return xxhash.xxh128
-        except ImportError:
-            import hashlib
-            return hashlib.md5
+        """This is different from upstream which uses xxhash if available and falls back to md5"""
+        import hashlib
+        return hashlib.blake2b
 
     async def hash_file(self, filename):
         file_path = os.path.join(os.getcwd(), filename)  # Construct full file path
