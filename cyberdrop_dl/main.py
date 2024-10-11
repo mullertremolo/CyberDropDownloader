@@ -60,17 +60,17 @@ async def director(manager: Manager) -> None:
 
     logger_debug = logging.getLogger("cyberdrop_dl_debug")
     import cyberdrop_dl.utils.utilities
-    if os.getenv("PYCHARM_HOSTED") is not None or manager.config_manager.settings_data['Runtime_Options']['log_level'] == -1:
+    if os.getenv("PYCHARM_HOSTED") is not None or manager.config_manager.settings_data['Runtime_Options']['log_level'] == -1 or 'TERM_PROGRAM' in os.environ.keys() and os.environ['TERM_PROGRAM'] == 'vscode':
         manager.config_manager.settings_data['Runtime_Options']['log_level'] = 10
         cyberdrop_dl.utils.utilities.DEBUG_VAR = True
 
-    if os.getenv("PYCHARM_HOSTED") is not None or manager.config_manager.settings_data['Runtime_Options']['console_log_level'] == -1:
+    if os.getenv("PYCHARM_HOSTED") is not None or manager.config_manager.settings_data['Runtime_Options']['console_log_level'] == -1 or 'TERM_PROGRAM' in os.environ.keys() and os.environ['TERM_PROGRAM'] == 'vscode':
         cyberdrop_dl.utils.utilities.CONSOLE_DEBUG_VAR = True
 
         
     if cyberdrop_dl.utils.utilities.DEBUG_VAR:
         logger_debug.setLevel(manager.config_manager.settings_data['Runtime_Options']['log_level'])
-        if os.getenv("PYCHARM_HOSTED") is not None:
+        if os.getenv("PYCHARM_HOSTED") is not None or 'TERM_PROGRAM' in os.environ.keys() and os.environ['TERM_PROGRAM'] == 'vscode':
             file_handler_debug = logging.FileHandler("../cyberdrop_dl_debug.log", mode="w")
         else:
             file_handler_debug = logging.FileHandler("./cyberdrop_dl_debug.log", mode="w")
@@ -127,8 +127,12 @@ async def director(manager: Manager) -> None:
                 print_(traceback.format_exc())
                 exit(1)
 
-        clear_screen_proc = await asyncio.create_subprocess_shell('cls' if os.name == 'nt' else 'clear')
-        await clear_screen_proc.wait()
+        # Skip clearing console if running with no UI
+        if not manager.args_manager.no_ui:
+            clear_screen_proc = await asyncio.create_subprocess_shell('cls' if os.name == 'nt' else 'clear')
+            await clear_screen_proc.wait()
+        else:
+            print('\n\n')
 
         await log_with_color(f"Running Post-Download Processes For Config: {manager.config_manager.loaded_config}...", "green", 20)
         if isinstance(manager.args_manager.sort_downloads, bool):

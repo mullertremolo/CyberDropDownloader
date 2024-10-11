@@ -1,48 +1,55 @@
 from __future__ import annotations
-import pathlib
-import asyncio
 
+import asyncio
 import os
+import pathlib
 from typing import TYPE_CHECKING
 
-from InquirerPy import inquirer
+from InquirerPy import inquirer, get_style
 from InquirerPy.base.control import Choice
 from InquirerPy.separator import Separator
 from InquirerPy.validator import EmptyInputValidator, PathValidator
 from rich.console import Console
-from cyberdrop_dl.utils.utilities import log
 
 from cyberdrop_dl.utils.transfer.transfer_v4_config import transfer_v4_config
 from cyberdrop_dl.utils.transfer.transfer_v4_db import transfer_v4_db
+from cyberdrop_dl.utils.utilities import log
 
 if TYPE_CHECKING:
     from typing import List
 
     from cyberdrop_dl.managers.manager import Manager
 
-
 console = Console()
 
 
 def main_prompt(manager: Manager) -> int:
     """Main prompt for the program"""
+    choices = [
+        Choice(1, "Download"),
+        Choice(2, "Download (All Configs)"),
+        Choice(3, "Retry Failed Downloads"),
+        Choice(4, "Create File Hashes"),
+        Choice(5, "Sort All Configs"),
+        Choice(6, "Edit URLs"),
+        Separator(),
+        Choice(7, f"Select Config (Current: {manager.config_manager.loaded_config})"),
+        Choice(8, "Change URLs.txt file and Download Location"),
+        Choice(9, "Edit Configs"),
+        Separator(),
+        Choice(10, "Import Cyberdrop_V4 Items"),
+        Choice(11, "View Changelog"),
+        Choice(12, "Exit"),
+    ]
+
+    simp_disclaimer_shown = manager.cache_manager.get("simp_disclaimer_shown")
+    if simp_disclaimer_shown == None:
+        choices = [Choice(-1, "!! VIEW DISCLAIMER !!")]
+
     action = inquirer.select(
         message="What would you like to do?",
-        choices=[
-            Choice(1, "Download"),
-            Choice(2, "Download (All Configs)"),
-            Choice(3, "Retry Failed Downloads"),
-            Choice(4, "Create File Hashes"),
-            Choice(5, "Sort All Configs"),
-            Choice(6, "Edit URLs"),
-            Separator(),
-            Choice(7, f"Select Config (Current: {manager.config_manager.loaded_config})"),
-            Choice(8, "Change URLs.txt file and Download Location"),
-            Choice(9, "Edit Configs"),
-            Separator(),
-            Choice(10, "Import Cyberdrop_V4 Items"),
-            Choice(11, "Exit"),
-        ], long_instruction="ARROW KEYS: Navigate | ENTER: Select",
+        choices=choices, long_instruction="ARROW KEYS: Navigate | ENTER: Select",
+        style=get_style({"pointer": "#ff0000 bold"}) if simp_disclaimer_shown == None else None,
         vi_mode=manager.vi_mode,
     ).execute()
 
@@ -135,14 +142,14 @@ def import_cyberdrop_v4_items_prompt(manager: Manager) -> None:
             if import_download_history_path.is_file():
                 transfer_v4_db(import_download_history_path, manager.path_manager.history_db)
             else:
-                loop=asyncio.new_event_loop()
+                loop = asyncio.new_event_loop()
                 for ele in pathlib.Path(import_download_history_path).glob("**/*.sqlite"):
-                    if str(ele)==str(manager.path_manager.history_db):
+                    if str(ele) == str(manager.path_manager.history_db):
                         continue
                     try:
                         transfer_v4_db(ele, manager.path_manager.history_db)
                     except Exception as e:
-                        loop.run_until_complete(log(f"Error importing {ele.name}: {str(e)}",20))
+                        loop.run_until_complete(log(f"Error importing {ele.name}: {str(e)}", 20))
 
         # Done
         elif action == 3:
@@ -155,10 +162,10 @@ def donations_prompt(manager: Manager) -> None:
     console.print("[bold]Donations[/bold]")
     console.print("")
     console.print("I started making this program around three years ago at this point,"
-                  "\nIt has grown larger than I could've imagined and I'm very proud of it."
-                  "\nI have put a lot of time and effort into this program and I'm glad that people are using it."
-                  "\nThanks to everyone that have supported me, "
-                  "it keeps me motivated to continue working on this program.")
+                "\nIt has grown larger than I could've imagined and I'm very proud of it."
+                "\nI have put a lot of time and effort into this program and I'm glad that people are using it."
+                "\nThanks to everyone that have supported me, "
+                "it keeps me motivated to continue working on this program.")
     console.print("")
     console.print("If you'd like to support me and my work, you can donate to me via the following methods:")
     console.print("BuyMeACoffee: https://www.buymeacoffee.com/jbsparrow")

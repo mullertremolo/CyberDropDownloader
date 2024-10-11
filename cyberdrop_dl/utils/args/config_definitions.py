@@ -4,7 +4,6 @@ from typing import Dict
 
 from cyberdrop_dl.managers.path_manager import APP_STORAGE, DOWNLOAD_STORAGE
 
-
 authentication_settings: Dict = {
     "Forums": {
         "celebforum_xf_user_cookie": "",
@@ -49,7 +48,6 @@ authentication_settings: Dict = {
     }
 }
 
-
 settings: Dict = {
     "Download_Options": {
         "block_download_sub_folders": False,
@@ -62,6 +60,7 @@ settings: Dict = {
         "scrape_single_forum_post": False,
         "separate_posts": False,
         "skip_download_mark_completed": False,
+        "skip_referer_seen_before": False,
     },
     "Files": {
         "input_file": str(APP_STORAGE / "Configs" / "{config}" / "URLs.txt"),
@@ -96,16 +95,18 @@ settings: Dict = {
     "Runtime_Options": {
         "ignore_history": False,
         "log_level": 10,
-        "console_log_level":100,
+        "console_log_level": 100,
         "skip_check_for_partial_files": False,
         "skip_check_for_empty_folders": False,
         "delete_partial_files": False,
         "send_unsupported_to_jdownloader": False,
-        "update_last_forum_post": False,
+        "update_last_forum_post": True,
     },
     "Sorting": {
         "sort_downloads": False,
         "sort_folder": str(DOWNLOAD_STORAGE / "Cyberdrop-DL Sorted Downloads"),
+        "scan_folder": None,
+        "sort_cdl_only": True,
         "sort_incremementer_format": " ({i})",
         "sorted_audio": "{sort_dir}/{base_dir}/Audio/{filename}{ext}",
         "sorted_image": "{sort_dir}/{base_dir}/Images/{filename}{ext}",
@@ -113,7 +114,6 @@ settings: Dict = {
         "sorted_video": "{sort_dir}/{base_dir}/Videos/{filename}{ext}",
     }
 }
-
 
 global_settings: Dict = {
     "General": {
@@ -127,24 +127,24 @@ global_settings: Dict = {
     },
     "Rate_Limiting_Options": {
         "connection_timeout": 15,
-        "download_attempts": 10,
+        "download_attempts": 5,
         "read_timeout": 300,
         "rate_limit": 50,
         "download_delay": 0.5,
         "max_simultaneous_downloads": 15,
-        "max_simultaneous_downloads_per_domain": 5,
-        "download_speed_limit":0
+        "max_simultaneous_downloads_per_domain": 3,
+        "download_speed_limit": 0
     },
     "Dupe_Cleanup_Options":
-    {
-  "delete_after_download": False,
-  "hash_while_downloading": False,
- "keep_prev_download": False,
-        "keep_new_download": True,
+        {
+            "delete_after_download": False,
+            "hash_while_downloading": False,
+            "keep_prev_download": False,
+            "keep_new_download": True,
+            "dedupe_already_downloaded": False,
+            "delete_off_disk": False
 
-  "dedupe_already_downloaded": False
-
-    },
+        },
 
     "UI_Options": {
         "vi_mode": False,
@@ -153,4 +153,3 @@ global_settings: Dict = {
         "downloading_item_limit": 5,
     }
 }
-

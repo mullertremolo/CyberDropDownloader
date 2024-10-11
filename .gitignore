@@ -3,6 +3,7 @@
 /Test-AppData-Dir/
 /AppData/
 /Downloads/
+cyberdrop_dl_debug.log
 
 # Python cache
 __pycache__
@@ -13,3 +14,6 @@ venv
 .vscode
 # pycharm
 .idea
+
+# Compiled package
+/dist/

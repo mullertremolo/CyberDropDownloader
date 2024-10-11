@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import field
 from pathlib import Path
+
 import arrow
 
 from cyberdrop_dl.utils.args.args import parse_args
@@ -17,11 +18,10 @@ class ArgsManager:
         self.all_configs = False
         self.sort_all_configs = False
         self.retry_failed = False
-        self.retry_all=False
-        self.retry_any=False
+        self.retry_all = False
+        self.retry_any = False
         self.retry_maintenance = False
         self.webhook_url = ""
-
         self.max_items = None
 
         self.immediate_download = False
@@ -29,6 +29,7 @@ class ArgsManager:
         self.load_config_from_args = False
         self.load_config_name = ""
         self.other_links: list = []
+        self.additive_args = ["skip_hosts","only_hosts"]
 
         # Files
         self.input_file = None
@@ -36,22 +37,24 @@ class ArgsManager:
         self.config_file = None
         self.appdata_dir = None
         self.log_dir = None
-        
+
         # Sorting
         self.sort_downloads = field(init=False)
+        self.sort_cdl_only = field(init=True)
         self.sort_folder = None
-        
+        self.scan_folder = None
+
         # Logs
         self.main_log_filename = None
         self.last_forum_post_filename = None
         self.unsupported_urls_filename = None
         self.download_error_urls_filename = None
         self.scrape_error_urls_filename = None
-        
+
         # UI
         self.vi_mode = None
-        self.after=None
-        self.before=None
+        self.after = None
+        self.before = None
 
     def startup(self) -> None:
         """Parses arguments and sets variables accordingly"""
@@ -63,7 +66,7 @@ class ArgsManager:
         self.immediate_download = self.parsed_args['download']
         self.load_config_name = self.parsed_args['config']
         self.vi_mode = self.parsed_args['vi_mode']
-        
+
         if self.parsed_args['no_ui']:
             self.immediate_download = True
             self.no_ui = True
@@ -74,14 +77,14 @@ class ArgsManager:
         if self.parsed_args['download_all_configs']:
             self.all_configs = True
             self.immediate_download = True
-        
+
         if self.parsed_args['sort_all_configs']:
             self.sort_all_configs = True
             self.all_configs = True
             self.immediate_download = True
         if self.parsed_args['retry_failed']:
             self.retry_failed = True
-            self.retry_any=True
+            self.retry_any = True
             self.immediate_download = True
         if self.parsed_args['retry_all']:
             self.retry_all = True
@@ -103,9 +106,12 @@ class ArgsManager:
             self.log_dir = Path(self.parsed_args['log_folder'])
         if self.parsed_args['sort_downloads']:
             self.sort_downloads = True
+        if not self.parsed_args['sort_all_downloads']:
+            self.sort_cdl_only = True
         if self.parsed_args['sort_folder']:
             self.sort_folder = Path(self.parsed_args['sort_folder'])
-            
+        if self.parsed_args['scan_folder']:
+            self.scan_folder = Path(self.parsed_args['scan_folder'])
         if self.parsed_args['main_log_filename']:
             self.main_log_filename = self.parsed_args['main_log_filename']
         if self.parsed_args['last_forum_post_filename']:
@@ -124,16 +130,14 @@ class ArgsManager:
 
         self.other_links = self.parsed_args['links']
 
-
-        self.after= self.parsed_args['completed_after'] or arrow.get(0)
-        self.before= self.parsed_args['completed_before'] or arrow.get("3000")
+        self.after = self.parsed_args['completed_after'] or arrow.get(0)
+        self.before = self.parsed_args['completed_before'] or arrow.get("3000")
         self.max_items = self.parsed_args['max_items_retry']
         self.webhook_url = self.parsed_args['webhook_url']
 
-        self.after= self.parsed_args['completed_after'] or arrow.get(0)
-        self.before= self.parsed_args['completed_before'] or arrow.get("3000")
+        self.after = self.parsed_args['completed_after'] or arrow.get(0)
+        self.before = self.parsed_args['completed_before'] or arrow.get("3000")
         self.max_items = self.parsed_args['max_items_retry']
- 
 
         del self.parsed_args['download']
         del self.parsed_args['download_all_configs']
@@ -150,4 +154,8 @@ class ArgsManager:
         del self.parsed_args['proxy']
         del self.parsed_args['links']
         del self.parsed_args['sort_downloads']
+        del self.parsed_args['sort_all_downloads']
         del self.parsed_args['sort_folder']
+        del self.parsed_args['scan_folder']
+        del self.parsed_args['completed_after']
+        del self.parsed_args['completed_before']

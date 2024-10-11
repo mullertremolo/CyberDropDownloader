@@ -58,6 +58,11 @@ Setting this to true will remove the "(DOMAIN)" portion of folder names on new d
 
 Setting this to true (or selecting it) will remove the alphanumeric ID added to the end of filenames on some websites (ex. Bunkrr).
 
+Multipart archives filenames will be fixed so they have the proper pattern of their format.
+
+Supported formats: `.rar` `.7z` `.tar` `.gz` `.bz2` `.zip`
+
+
 ***
 
 * scrape\_single\_forum\_post
@@ -75,6 +80,12 @@ Setting this to true (or selecting it) will separate content from forum posts in
 * skip\_download\_mark\_complete
 
 Setting this to true (or selecting it) will skip downloading files and mark them as downloaded in the database.
+
+***
+
+* skip\_referer\_seen\_before
+
+Setting this to true (or selecting it) will skip downloading files from any referer that have been scraped before. The file (s) will always be skipped regardless of whether the referer was successfully scraped or not
 
 </details>
 
@@ -139,6 +150,12 @@ Cyberdrop-DL will output the links it fails to download, and the reason in CSV f
 What you want Cyberdrop-DL to call the scrape error log.
 
 Cyberdrop-DL will output the links it fails to scrape, and the reason in CSV format.
+
+***
+
+* discord\_webhook\_url
+
+The URL of the Discord webhook that you want to send download stats to.
 
 </details>
 
@@ -251,9 +268,9 @@ Setting this to true will skip this check.
 
 * skip\_check\_for\_empty\_folders
 
-After a run is complete, the program will do a check (and remove) any empty folders in the download folder.
+After a run is complete, the program will do a check (and remove) any empty files and folders in the download and scan folder.
 
-Setting this to true will remove this functionality.
+Setting this to true will disable this functionality.
 
 ***
 
@@ -290,16 +307,58 @@ You can use the shared path flags below in any part of the sorting schemas. You 
 Shared Path Flags:
 
 * sort\_dir - sort\_folder path
-* base\_dir - the highest level folder name inside the downloads folder
-* parent\_dir - the folder name of where the file is
+* base\_dir - the highest level folder name inside the folder being scanned 'scan\_folder' (model name / thread name)
+* parent\_dir - the folder name of where the file is (album name)
 * filename - the files name (stem)
 * ext - the files extension
+
+It is possible to treat a list of URLs as a group, allowing them to be downloaded to a single folder.
+
+To define a group, put a title above the URLs you want to be in the group by doing the following: `--- {group name}` or `=== {group name}`.
+
+To define the end of a group, insert an group with no name. (`---` or `===`)
+
+Here is an example URL file with two groups:
+
+```
+https://example.com/file1.jpg
+=== Test
+https://example.com/file2.jpg
+https://example.com/file3.jpg
+===
+https://example.com/file4.jpg
+--- Test 2
+https://example.com/file5.jpg
+https://example.com/file6.jpg
+===
+https://example.com/file7.jpg
+```
+
+Those downloads would be sorted as follows:
+
+<img src="../../.gitbook/assets/Screen Shot 2024-09-23 at 11.09.50.png" alt="" data-size="original">
+
+***
+
+* scan\_folder
+
+Sets the starting point for the file scan
+
+Each direct child of the scan\_folder is recursively scanned ,and files are moved based on your settings
+
+If this is not set then the downloads\_dir is used instead
 
 ***
 
 * sort\_downloads
 
 Setting this to true will allow Cyberdrop-DL to sort downloads after a run is complete.
+
+***
+
+* sort\_cdl\_only
+
+Setting this to true will sort only files that were downloaded by Cyberdrop-DL. sort\_downloads must be true for this to work.
 
 ***
 

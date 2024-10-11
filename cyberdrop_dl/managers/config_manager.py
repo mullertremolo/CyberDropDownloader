@@ -72,6 +72,8 @@ class ConfigManager:
         self.authentication_settings = self.manager.path_manager.config_dir / "authentication.yaml"
         self.global_settings = self.manager.path_manager.config_dir / "global_settings.yaml"
         self.settings = self.manager.path_manager.config_dir / self.loaded_config / "settings.yaml"
+        if (self.manager.path_manager.config_dir / self.loaded_config / "authentication.yaml").is_file():
+            self.authentication_settings = self.manager.path_manager.config_dir / self.loaded_config / "authentication.yaml"
 
         self.settings.parent.mkdir(parents=True, exist_ok=True)
         self.load_configs()
@@ -104,6 +106,7 @@ class ConfigManager:
             self.settings_data['Logs']['log_folder'] = APP_STORAGE / "Configs" / self.loaded_config / "Logs"
             self.settings_data['Logs']['webhook_url'] = ""
             self.settings_data['Sorting']['sort_folder'] = DOWNLOAD_STORAGE / "Cyberdrop-DL Sorted Downloads"
+            self.settings_data['Sorting']['scan_folder'] = None
             self.write_updated_settings_config()
 
     def _verify_authentication_config(self) -> None:
@@ -128,6 +131,8 @@ class ConfigManager:
         self.settings_data['Logs']['log_folder'] = Path(self.settings_data['Logs']['log_folder'])
         self.settings_data['Logs']['webhook_url'] = str(self.settings_data['Logs']['webhook_url'])
         self.settings_data['Sorting']['sort_folder'] = Path(self.settings_data['Sorting']['sort_folder'])
+        self.settings_data['Sorting']['scan_folder'] = Path(self.settings_data['Sorting']['scan_folder']) if \
+        self.settings_data['Sorting']['scan_folder'] else None
 
         # change to ints
         self.settings_data['File_Size_Limits']['maximum_image_size'] = int(
@@ -145,7 +150,8 @@ class ConfigManager:
 
         self.settings_data['Runtime_Options']['log_level'] = int(self.settings_data['Runtime_Options']['log_level'])
 
-        self.settings_data['Runtime_Options']['console_log_level'] = int(self.settings_data['Runtime_Options']['console_log_level'])
+        self.settings_data['Runtime_Options']['console_log_level'] = int(
+            self.settings_data['Runtime_Options']['console_log_level'])
 
         self.global_settings_data['General']['max_file_name_length'] = int(
             self.global_settings_data['General']['max_file_name_length'])
@@ -164,7 +170,7 @@ class ConfigManager:
             self.global_settings_data['Rate_Limiting_Options']['max_simultaneous_downloads_per_domain'])
         self.global_settings_data['Rate_Limiting_Options']['rate_limit'] = int(
             self.global_settings_data['Rate_Limiting_Options']['rate_limit'])
-        
+
         self.global_settings_data['Rate_Limiting_Options']['download_speed_limit'] = int(
             self.global_settings_data['Rate_Limiting_Options']['download_speed_limit'])
         self.global_settings_data['Rate_Limiting_Options']['read_timeout'] = int(
@@ -179,8 +185,9 @@ class ConfigManager:
         self.global_settings_data['Dupe_Cleanup_Options']['keep_prev_download'] = \
             self.global_settings_data['Dupe_Cleanup_Options']['keep_prev_download']
         self.global_settings_data['Dupe_Cleanup_Options']['keep_new_download'] = \
-            self.global_settings_data['Dupe_Cleanup_Options']['keep_new_download']        
-
+            self.global_settings_data['Dupe_Cleanup_Options']['keep_new_download']
+        self.global_settings_data['Dupe_Cleanup_Options']['delete_off_disk'] = \
+            self.global_settings_data['Dupe_Cleanup_Options']['delete_off_disk']
 
         self.global_settings_data['UI_Options']['refresh_rate'] = int(
             self.global_settings_data['UI_Options']['refresh_rate'])
@@ -188,7 +195,7 @@ class ConfigManager:
             self.global_settings_data['UI_Options']['scraping_item_limit'])
         self.global_settings_data['UI_Options']['downloading_item_limit'] = int(
             self.global_settings_data['UI_Options']['downloading_item_limit'])
-        
+
         if get_keys(default_settings_data) == get_keys(existing_settings_data):
             return
 
@@ -221,6 +228,8 @@ class ConfigManager:
         settings_data['Logs']['log_folder'] = str(settings_data['Logs']['log_folder'])
         settings_data['Logs']['webhook_url'] = str(settings_data['Logs']['webhook_url'])
         settings_data['Sorting']['sort_folder'] = str(settings_data['Sorting']['sort_folder'])
+        settings_data['Sorting']['scan_folder'] = str(settings_data['Sorting']['scan_folder']) if \
+        settings_data['Sorting']['scan_folder'] else None
         _save_yaml(new_settings, settings_data)
 
     def write_updated_authentication_config(self) -> None:
@@ -235,6 +244,8 @@ class ConfigManager:
         settings_data['Logs']['log_folder'] = str(settings_data['Logs']['log_folder'])
         settings_data['Logs']['webhook_url'] = str(settings_data['Logs']['webhook_url'])
         settings_data['Sorting']['sort_folder'] = str(settings_data['Sorting']['sort_folder'])
+        settings_data['Sorting']['scan_folder'] = str(settings_data['Sorting']['scan_folder'])
+
         _save_yaml(self.settings, settings_data)
 
     def write_updated_global_settings_config(self) -> None:

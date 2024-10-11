@@ -50,6 +50,7 @@ class BunkrrCrawler(Crawler):
         """Scrapes an album"""
         scrape_item.url = self.primary_base_domain.with_path(scrape_item.url.path)
         album_id = scrape_item.url.parts[2]
+        scrape_item.album_id = album_id
         results = await self.get_album_results(album_id)
 
         async with self.request_limiter:
@@ -86,7 +87,7 @@ class BunkrrCrawler(Crawler):
                     src = src.with_host(src.host.replace("i-", ""))
                 if src.host.split(".")[0] == "fries":
                     raise FileNotFoundError("Bunkr server is 'fries', reverting to parent")
-                new_scrape_item = await self.create_scrape_item(scrape_item, link, "", True, album_id, date)
+                new_scrape_item = await self.create_scrape_item(scrape_item, link, "", True, album_id, date, add_parent = scrape_item.url)
 
                 if "no-image" in src.name:
                     raise FileNotFoundError("No image found, reverting to parent")
@@ -95,7 +96,8 @@ class BunkrrCrawler(Crawler):
                 if not await self.check_album_results(src, results):
                     await self.handle_file(src, new_scrape_item, filename, ext)
             except FileNotFoundError:
-                self.manager.task_group.create_task(self.run(ScrapeItem(link, scrape_item.parent_title, True, album_id, date)))
+                self.manager.task_group.create_task(
+                    self.run(ScrapeItem(link, scrape_item.parent_title, True, album_id, date)))
 
     @error_handling_wrapper
     async def video(self, scrape_item: ScrapeItem) -> None:
@@ -130,7 +132,7 @@ class BunkrrCrawler(Crawler):
     async def other(self, scrape_item: ScrapeItem) -> None:
         """Scrapes an image/other file"""
         scrape_item.url = self.primary_base_domain.with_path(scrape_item.url.path)
-        
+
         if await self.check_complete_from_referer(scrape_item):
             return
 
@@ -158,7 +160,7 @@ class BunkrrCrawler(Crawler):
         """get.bunkr.su"""
         async with self.request_limiter:
             soup = await self.client.get_BS4(self.domain, url)
-        
+
         try:
             link_container = soup.select('a[download*=""]')[-1]
         except IndexError:
