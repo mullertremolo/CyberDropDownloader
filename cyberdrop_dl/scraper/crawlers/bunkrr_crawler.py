@@ -11,7 +11,7 @@ from yarl import URL
 from cyberdrop_dl.clients.errors import NoExtensionFailure
 from cyberdrop_dl.scraper.crawler import Crawler
 from cyberdrop_dl.utils.dataclasses.url_objects import ScrapeItem
-from cyberdrop_dl.utils.utilities import FILE_FORMATS, get_filename_and_ext, error_handling_wrapper
+from cyberdrop_dl.utils.utilities import FILE_FORMATS, get_filename_and_ext, error_handling_wrapper, log_debug
 
 if TYPE_CHECKING:
     from cyberdrop_dl.managers.manager import Manager
@@ -87,7 +87,8 @@ class BunkrrCrawler(Crawler):
                     src = src.with_host(src.host.replace("i-", ""))
 
                 hostname = src.host.split(".")[0]
-                if re.match(r"(?i)^(fries|pizza)$", hostname):
+                if re.match(r"(?i)^(fries)$", hostname):
+                    await log_debug(f"Bunkr server is '{hostname}', reverting to parent", 40)
                     raise FileNotFoundError(f"Bunkr server is '{hostname}', reverting to parent")
 
                 new_scrape_item = await self.create_scrape_item(scrape_item, link, "", True, album_id, date, add_parent = scrape_item.url)
