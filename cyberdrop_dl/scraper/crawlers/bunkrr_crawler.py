@@ -85,8 +85,11 @@ class BunkrrCrawler(Crawler):
                 src = src.with_query("download=true")
                 if file_ext.lower() not in FILE_FORMATS['Images']:
                     src = src.with_host(src.host.replace("i-", ""))
-                if src.host.split(".")[0] == "fries":
-                    raise FileNotFoundError("Bunkr server is 'fries', reverting to parent")
+
+                hostname = src.host.split(".")[0]
+                if re.match(r"(?i)^(fries|pizza)$", hostname):
+                    raise FileNotFoundError(f"Bunkr server is '{hostname}', reverting to parent")
+
                 new_scrape_item = await self.create_scrape_item(scrape_item, link, "", True, album_id, date, add_parent = scrape_item.url)
 
                 if "no-image" in src.name:
