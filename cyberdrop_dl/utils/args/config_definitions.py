@@ -28,6 +28,9 @@ authentication_settings: Dict = {
         "xbunker_username": "",
         "xbunker_password": "",
     },
+    "Coomer": {
+        "session": "",
+    },
     "XXXBunker": {
         "PHPSESSID": "",
     },
@@ -44,6 +47,9 @@ authentication_settings: Dict = {
     },
     "PixelDrain": {
         "pixeldrain_api_key": "",
+    },
+    "RealDebrid": {
+        "realdebrid_api_key": "",
     },
     "Reddit": {
         "reddit_personal_use_script": "",
@@ -64,6 +70,7 @@ settings: Dict = {
         "separate_posts": False,
         "skip_download_mark_completed": False,
         "skip_referer_seen_before": False,
+        "maximum_number_of_children": []
     },
     "Files": {
         "input_file": str(APP_STORAGE / "Configs" / "{config}" / "URLs.txt"),
@@ -73,8 +80,8 @@ settings: Dict = {
         "log_folder": str(APP_STORAGE / "Configs" / "{config}" / "Logs"),
         "webhook_url": "",
         "main_log_filename": "downloader.log",
-        "last_forum_post_filename": "Last_Scraped_Forum_Posts.txt",
-        "unsupported_urls_filename": "Unsupported_URLs.txt",
+        "last_forum_post_filename": "Last_Scraped_Forum_Posts.csv",
+        "unsupported_urls_filename": "Unsupported_URLs.csv",
         "download_error_urls_filename": "Download_Error_URLs.csv",
         "scrape_error_urls_filename": "Scrape_Error_URLs.csv",
         "rotate_logs": False
@@ -106,8 +113,8 @@ settings: Dict = {
         "update_last_forum_post": True,
         "send_unsupported_to_jdownloader": False,
         "jdownloader_download_dir": None,
-        "jdownloader_autostart" : False,
-        "jdownloader_whitelist" : []
+        "jdownloader_autostart": False,
+        "jdownloader_whitelist": []
     },
     "Sorting": {
         "sort_downloads": False,

@@ -3,16 +3,17 @@ from __future__ import annotations
 import http
 import re
 from copy import deepcopy
-from typing import TYPE_CHECKING
 from hashlib import sha256
+from typing import TYPE_CHECKING
 
 from aiolimiter import AsyncLimiter
 from yarl import URL
 
 from cyberdrop_dl.clients.errors import ScrapeFailure, DownloadFailure, PasswordProtected, NoExtensionFailure
 from cyberdrop_dl.scraper.crawler import Crawler
-from cyberdrop_dl.utils.dataclasses.url_objects import ScrapeItem
+from cyberdrop_dl.utils.dataclasses.url_objects import ScrapeItem, FILE_HOST_ALBUM
 from cyberdrop_dl.utils.utilities import get_filename_and_ext, error_handling_wrapper, log
+from cyberdrop_dl.clients.errors import ScrapeItemMaxChildrenReached
 
 if TYPE_CHECKING:
     from cyberdrop_dl.clients.scraper_client import ScraperClient
@@ -50,7 +51,8 @@ class GoFileCrawler(Crawler):
         scrape_item.album_id = content_id
         scrape_item.part_of_album = True
 
-        password = scrape_item.url.query.get("password","")
+        password = scrape_item.url.query.get("password", "")
+        scrape_item.url = scrape_item.url.with_query(None)
         if password:
             password = sha256(password.encode()).hexdigest()
 
@@ -58,7 +60,8 @@ class GoFileCrawler(Crawler):
             async with self.request_limiter:
                 JSON_Resp = await self.client.get_json(self.domain,
                                                     (self.api_address / "contents" / content_id).with_query(
-                                                        {"wt": self.websiteToken, "password": password }), headers_inc=self.headers)
+                                                        {"wt": self.websiteToken, "password": password}),
+                                                    headers_inc=self.headers, origin=scrape_item)
         except DownloadFailure as e:
             if e.status == http.HTTPStatus.UNAUTHORIZED:
                 self.websiteToken = ""
@@ -67,49 +70,67 @@ class GoFileCrawler(Crawler):
                 async with self.request_limiter:
                     JSON_Resp = await self.client.get_json(self.domain,
                                                         (self.api_address / "contents" / content_id).with_query(
-                                                            {"wt": self.websiteToken, "password": password}), headers_inc=self.headers)
+                                                            {"wt": self.websiteToken, "password": password}),
+                                                        headers_inc=self.headers, origin=scrape_item)
             else:
-                raise ScrapeFailure(e.status, e.message)
-            
+                raise ScrapeFailure(e.status, e.message, origin=scrape_item)
+
         if JSON_Resp["status"] == "error-notFound":
-            raise ScrapeFailure(404, "Album not found")
+            raise ScrapeFailure(404, "Album not found", origin=scrape_item)
 
         JSON_Resp = JSON_Resp['data']
 
         if "password" in JSON_Resp:
-            if JSON_Resp['passwordStatus'] in {'passwordRequired','passwordWrong'} or not password:
-                raise PasswordProtected(scrape_item)
+            if JSON_Resp['passwordStatus'] in {'passwordRequired', 'passwordWrong'} or not password:
+                raise PasswordProtected(origin=scrape_item)
 
         if JSON_Resp["canAccess"] is False:
-            raise ScrapeFailure(403, "Album is private")
+            raise ScrapeFailure(403, "Album is private", origin=scrape_item)
 
         title = await self.create_title(JSON_Resp["name"], content_id, None)
+        #Do not reset nested folders
+        if scrape_item.type!= FILE_HOST_ALBUM:
+            scrape_item.type = FILE_HOST_ALBUM
+            scrape_item.children = scrape_item.children_limit = 0
+
+            try:
+                scrape_item.children_limit = self.manager.config_manager.settings_data['Download_Options']['maximum_number_of_children'][scrape_item.type]
+            except (IndexError, TypeError):
+                pass
 
         contents = JSON_Resp["children"]
         for content_id in contents:
             content = contents[content_id]
+            link = None
             if content["type"] == "folder":
                 new_scrape_item = await self.create_scrape_item(scrape_item,
                                                                 self.primary_base_domain / "d" / content["code"], title,
-                                                                True, add_parent = scrape_item.url)
+                                                                True, add_parent=scrape_item.url)
                 self.manager.task_group.create_task(self.run(new_scrape_item))
-                continue
-            if content["link"] == "overloaded":
+            
+            elif content["link"] == "overloaded":
                 link = URL(content["directLink"])
             else:
                 link = URL(content["link"])
-            try:
-                filename, ext = await get_filename_and_ext(link.name)
-            except NoExtensionFailure:
-                await log(f"Scrape Failed: {link} (No File Extension)", 40)
-                await self.manager.log_manager.write_scrape_error_log(link, " No File Extension")
-                await self.manager.progress_manager.scrape_stats_progress.add_failure("No File Extension")
-                continue
-            duplicate_scrape_item = deepcopy(scrape_item)
-            duplicate_scrape_item.possible_datetime = content["createTime"]
-            duplicate_scrape_item.part_of_album = True
-            await duplicate_scrape_item.add_to_parent_title(title)
-            await self.handle_file(link, duplicate_scrape_item, filename, ext)
+
+            if link:
+                try:
+                    filename, ext = await get_filename_and_ext(link.name)
+                    duplicate_scrape_item = deepcopy(scrape_item)
+                    duplicate_scrape_item.possible_datetime = content["createTime"]
+                    duplicate_scrape_item.part_of_album = True
+                    await duplicate_scrape_item.add_to_parent_title(title)
+                    await self.handle_file(link, duplicate_scrape_item, filename, ext)
+                except NoExtensionFailure:
+                    await log(f"Scrape Failed: {link} (No File Extension)", 40)
+                    await self.manager.log_manager.write_scrape_error_log(link, " No File Extension")
+                    await self.manager.progress_manager.scrape_stats_progress.add_failure("No File Extension")
+            scrape_item.children += 1
+            if scrape_item.children_limit:
+                if scrape_item.children >= scrape_item.children_limit:
+                    raise ScrapeItemMaxChildrenReached(origin = scrape_item)
+                   
+                
 
     """~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
 

@@ -13,7 +13,8 @@ class HashManager:
     async def startup(self):
         await self.hash_client.startup()
 
-    def _get_hasher(self):
+    @staticmethod
+    def _get_hasher():
         """This is different from upstream which uses xxhash if available and falls back to md5"""
         import hashlib
         return hashlib.blake2b

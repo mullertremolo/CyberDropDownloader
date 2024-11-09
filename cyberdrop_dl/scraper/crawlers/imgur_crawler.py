@@ -7,8 +7,9 @@ from yarl import URL
 
 from cyberdrop_dl.clients.errors import ScrapeFailure, FailedLoginFailure
 from cyberdrop_dl.scraper.crawler import Crawler
-from cyberdrop_dl.utils.dataclasses.url_objects import ScrapeItem
+from cyberdrop_dl.utils.dataclasses.url_objects import ScrapeItem, FILE_HOST_ALBUM
 from cyberdrop_dl.utils.utilities import error_handling_wrapper, log, get_filename_and_ext
+from cyberdrop_dl.clients.errors import ScrapeItemMaxChildrenReached
 
 if TYPE_CHECKING:
     from cyberdrop_dl.managers.manager import Manager
@@ -43,41 +44,53 @@ class ImgurCrawler(Crawler):
         """Scrapes an album"""
         if self.imgur_client_id == "":
             await log("To scrape imgur content, you need to provide a client id", 30)
-            raise FailedLoginFailure(status=401, message="No Imgur Client ID provided")
+            raise FailedLoginFailure(message="No Imgur Client ID provided")
         await self.check_imgur_credits()
+        scrape_item.type = FILE_HOST_ALBUM
+        scrape_item.children = scrape_item.children_limit = 0
+        
+        try:
+            scrape_item.children_limit = self.manager.config_manager.settings_data['Download_Options']['maximum_number_of_children'][scrape_item.type]
+        except (IndexError, TypeError):
+            pass
 
         album_id = scrape_item.url.parts[-1]
-        scrape_item.album_id = album_id 
+        scrape_item.album_id = album_id
         scrape_item.part_of_album = True
 
         async with self.request_limiter:
             JSON_Obj = await self.client.get_json(self.domain, self.imgur_api / f"album/{album_id}",
-                                                headers_inc=self.headers)
+                                                headers_inc=self.headers, origin=scrape_item)
         title_part = JSON_Obj["data"].get("title", album_id)
         title = await self.create_title(title_part, scrape_item.url.parts[2], None)
 
         async with self.request_limiter:
             JSON_Obj = await self.client.get_json(self.domain, self.imgur_api / f"album/{album_id}/images",
-                                                headers_inc=self.headers)
+                                                headers_inc=self.headers, origin=scrape_item)
 
         for image in JSON_Obj["data"]:
             link = URL(image["link"])
             date = image["datetime"]
-            new_scrape_item = await self.create_scrape_item(scrape_item, link, title, True, date, add_parent = scrape_item.url)
+            new_scrape_item = await self.create_scrape_item(scrape_item, link, title, True, date,
+                                                            add_parent=scrape_item.url)
             await self.handle_direct(new_scrape_item)
+            scrape_item.children += 1
+            if scrape_item.children_limit:
+                if scrape_item.children >= scrape_item.children_limit:
+                    raise ScrapeItemMaxChildrenReached(origin = scrape_item)
 
     @error_handling_wrapper
     async def image(self, scrape_item: ScrapeItem) -> None:
         """Scrapes an image"""
         if self.imgur_client_id == "":
             await log("To scrape imgur content, you need to provide a client id", 30)
-            raise FailedLoginFailure(status=401, message="No Imgur Client ID provided")
+            raise FailedLoginFailure(message="No Imgur Client ID provided")
         await self.check_imgur_credits()
 
         image_id = scrape_item.url.parts[-1]
         async with self.request_limiter:
             JSON_Obj = await self.client.get_json(self.domain, self.imgur_api / f"image/{image_id}",
-                                                headers_inc=self.headers)
+                                                headers_inc=self.headers, origin=scrape_item)
 
         date = JSON_Obj["data"]["datetime"]
         link = URL(JSON_Obj["data"]["link"])
